@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>Elegant Photo Slider | Pure HTML/CSS/JS</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      user-select: none; /* prevent accidental drag on UI */
+    }
+
+    body {
+      background: linear-gradient(145deg, #f5f7fc 0%, #e9eef4 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+      padding: 1.5rem;
+    }
+
+    /* main slider card */
+    .slider-card {
+      max-width: 1100px;
+      width: 100%;
+      background: rgba(255,255,255,0.35);
+      backdrop-filter: blur(2px);
+      border-radius: 2rem;
+      padding: 1rem;
+      box-shadow: 0 25px 45px -12px rgba(0,0,0,0.35), 0 2px 8px rgba(0,0,0,0.05);
+      transition: all 0.2s;
+    }
+
+    /* slider viewport */
+    .slider {
+      position: relative;
+      border-radius: 1.5rem;
+      overflow: hidden;
+      background-color: #1e1f2c;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    }
+
+    /* container for hidden overflow */
+    .slider-container {
+      position: relative;
+      overflow: hidden;
+      border-radius: 1.5rem;
+    }
+
+    /* track that slides */
+    .slider-track {
+      display: flex;
+      transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      will-change: transform;
+    }
+
+    /* each slide */
+    .slide {
+      flex: 0 0 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #586ac7;
+    }
+
+   .slide img {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  background-color: #111217; /* optional: fill empty spaces with dark color */
+}
+
+    /* consistent height for clean layout */
+    .slider-container {
+      height: auto;
+    }
+
+    /* responsive fixed height: beautiful on any screen */
+    @media (min-width: 768px) {
+      .slide img {
+        height: 520px;
+      }
+    }
+    @media (max-width: 767px) {
+      .slide img {
+        height: 320px;
+      }
+    }
+    @media (max-width: 480px) {
+      .slide img {
+        height: 260px;
+      }
+    }
+
+    /* navigation arrows (absolute) */
+    .slider-btn {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(10, 20, 30, 0.65);
+      backdrop-filter: blur(6px);
+      border: none;
+      width: 46px;
+      height: 46px;
+      border-radius: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      font-weight: 600;
+      color: white;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      z-index: 20;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      backdrop-filter: blur(4px);
+      font-family: monospace;
+      line-height: 1;
+    }
+
+    .slider-btn:hover {
+      background: rgba(0, 0, 0, 0.85);
+      transform: translateY(-50%) scale(1.05);
+      color: #ffdd99;
+    }
+
+    .slider-btn:active {
+      transform: translateY(-50%) scale(0.96);
+    }
+
+    .btn-prev {
+      left: 18px;
+    }
+
+    .btn-next {
+      right: 18px;
+    }
+
+    /* dots container */
+    .dots-container {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 1.4rem;
+      margin-bottom: 0.6rem;
+      flex-wrap: wrap;
+      padding: 0.5rem;
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      background-color: #cbd5e1;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+
+    .dot.active {
+      background-color: #1e3a8a;
+      transform: scale(1.3);
+      box-shadow: 0 0 6px #1e3a8a;
+      width: 14px;
+      height: 14px;
+    }
+
+    .dot:hover:not(.active) {
+      background-color: #4b5563;
+      transform: scale(1.1);
+    }
+
+    /* optional subtle caption / image counter */
+    .slider-info {
+      text-align: center;
+      margin-top: 0.5rem;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: #2c3e4e;
+      letter-spacing: 0.3px;
+      background: rgba(255,255,240,0.7);
+      display: inline-block;
+      padding: 0.2rem 1rem;
+      border-radius: 60px;
+      backdrop-filter: blur(2px);
+    }
+
+    .info-wrapper {
+      display: flex;
+      justify-content: center;
+      margin-top: 0.2rem;
+    }
+
+    /* keyboard hint (subtle) */
+    .keyboard-hint {
+      text-align: center;
+      font-size: 0.7rem;
+      margin-top: 1rem;
+      color: #4a5b6e;
+      opacity: 0.7;
+      font-weight: 400;
+    }
+
+    /* pause on hover effect for autoplay (visual only) */
+    .slider:hover .slider-btn {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+<div class="slider-card">
+  <div class="slider" id="photoSlider">
+    <!-- slider viewport -->
+    <div class="slider-container">
+      <div class="slider-track" id="sliderTrack">
+        <!-- slides will be injected dynamically via JS -->
+      </div>
+      <!-- navigation buttons -->
+      <button class="slider-btn btn-prev" id="prevBtn" aria-label="Previous slide">❮</button>
+      <button class="slider-btn btn-next" id="nextBtn" aria-label="Next slide">❯</button>
+    </div>
+    <!-- dots indicator -->
+    <div class="dots-container" id="dotsContainer"></div>
+    <div class="info-wrapper">
+      <div class="slider-info" id="slideCounter">— / —</div>
+    </div>
+    <div class="keyboard-hint">
+      ◀  ▶  keyboard arrows  |  auto‑play pauses on hover
+    </div>
+  </div>
+</div>
+
+<script>
+  (function() {
+    // ---------- HIGH QUALITY IMAGE SET (rich & diverse) ----------
+      const images = [
+  { url: "image/99.jpg", alt: "First", caption: "First Image" },
+  { url: "image/100.jpg", alt: "Second", caption: "Second Image" },
+  { url: "image/91.jpg", alt: "Third", caption: "Third Image" },
+  { url: "image/92.jpg", alt: "First", caption: "First Image" },
+  { url: "image/93.jpg", alt: "Second", caption: "Second Image" },
+  { url: "image/94.jpg", alt: "Third", caption: "Third Image" },
+  { url: "image/95.jpg", alt: "First", caption: "First Image" },
+  { url: "image/96.jpg", alt: "Second", caption: "Second Image" },
+  { url: "image/97.jpg", alt: "Third", caption: "Third Image" },
+  { url: "image/98.jpg", alt: "First", caption: "First Image" },
+  { url: "image/101.jpg", alt: "Second", caption: "Second Image" },
+  { url: "image/102.jpg", alt: "Third", caption: "Third Image" },
+  { url: "image/103.jpg", alt: "First", caption: "First Image" },
+  { url: "image/104.jpg", alt: "Second", caption: "Second Image" },
+  { url: "image/105.jpg", alt: "Third", caption: "Third Image" },
+  { url: "image/106.jpg", alt: "First", caption: "First Image" },
+  { url: "image/107.jpg", alt: "Second", caption: "Second Image" },
+  { url: "image/108.jpg", alt: "Third", caption: "Third Image" },
+  { url: "image/109.jpg", alt: "First", caption: "First Image" },
+  { url: "image/110.jpg", alt: "Second", caption: "Second Image" },
+  { url: "image/111.jpg", alt: "Third", caption: "Third Image" },
+  { url: "image/112.jpg", alt: "First", caption: "First Image" },
+  { url: "image/113.jpg", alt: "Second", caption: "Second Image" },
+  { url: "image/114.jpg", alt: "Third", caption: "Third Image" },
+  { url: "image/115.jpg", alt: "First", caption: "First Image" },
+  { url: "image/116.jpg", alt: "Second", caption: "Second Image" },
+  { url: "image/117.jpg", alt: "Third", caption: "Third Image" },
+  { url: "image/118.jpg", alt: "First", caption: "First Image" },
+  { url: "image/119.jpg", alt: "Second", caption: "Second Image" },
+  { url: "image/120.jpg", alt: "Third", caption: "Third Image" },
+  { url: "image/121.jpg", alt: "First", caption: "First Image" },
+  { url: "image/122.jpg", alt: "Second", caption: "Second Image" },
+  { url: "image/123.jpg", alt: "Third", caption: "Third Image" },
+  { url: "image/124.jpg", alt: "First", caption: "First Image" },
+  { url: "image/125.jpg", alt: "Second", caption: "Second Image" },
+  // { url: "image/126.jpg", alt: "Third", caption: "Third Image" },
+  // { url: "image/127.jpg", alt: "First", caption: "First Image" },
+  { url: "image/128.jpg", alt: "Second", caption: "Second Image" },
+  { url: "image/129.jpg", alt: "Third", caption: "Third Image" },
+  // { url: "image/130.jpg", alt: "First", caption: "First Image" },
+  // { url: "image/131.jpg", alt: "Second", caption: "Second Image" },
+  // { url: "image/132.jpg", alt: "Third", caption: "Third Image" },
+  // { url: "image/133.jpg", alt: "First", caption: "First Image" },
+  // { url: "image/134.jpg", alt: "Second", caption: "Second Image" },
+  // { url: "image/135.jpg", alt: "Third", caption: "Third Image" },
+  // { url: "image/136.jpg", alt: "First", caption: "First Image" },
+  // { url: "image/137.jpg", alt: "Second", caption: "Second Image" },
+  // { url: "image/138.jpg", alt: "Third", caption: "Third Image" },
+  // { url: "image/139.jpg", alt: "First", caption: "First Image" },
+  // { url: "image/140.jpg", alt: "Second", caption: "Second Image" },
+  // { url: "image/141.jpg", alt: "Third", caption: "Third Image" },
+  // { url: "image/142.jpg", alt: "First", caption: "First Image" },
+  // { url: "image/143.jpg", alt: "Second", caption: "Second Image" },
+  { url: "image/144.jpg", alt: "Third", caption: "Third Image" },
+  { url: "image/145.jpg", alt: "First", caption: "First Image" },
+  { url: "image/146.jpg", alt: "Second", caption: "Second Image" },
+  { url: "image/147.jpg", alt: "Third", caption: "Third Image" },
+  { url: "image/148.jpg", alt: "First", caption: "First Image" },
+  { url: "image/149.jpg", alt: "Second", caption: "Second Image" },
+  { url: "image/111.jpg", alt: "Third", caption: "Third Image" },
+  { url: "image/112.jpg", alt: "First", caption: "First Image" },
+  { url: "image/113.jpg", alt: "Second", caption: "Second Image" },
+  { url: "image/114.jpg", alt: "Third", caption: "Third Image" },
+  { url: "image/115.jpg", alt: "First", caption: "First Image" },
+  { url: "image/116.jpg", alt: "Second", caption: "Second Image" },
+  { url: "image/117.jpg", alt: "Third", caption: "Third Image" },
+  { url: "image/118.jpg", alt: "First", caption: "First Image" },
+  { url: "image/119.jpg", alt: "Second", caption: "Second Image" },
+  { url: "image/1.jpg", alt: "Third", caption: "Third Image" },
+  { url: "image/2.jpg", alt: "First", caption: "First Image" },
+  { url: "image/3.jpg", alt: "Second", caption: "Second Image" },
+  { url: "image/4.jpg", alt: "Third", caption: "Third Image" },
+  { url: "image/5.jpg", alt: "First", caption: "First Image" },
+  { url: "image/6.jpg", alt: "Second", caption: "Second Image" },
+  { url: "image/7.jpg", alt: "Third", caption: "Third Image" },
+  { url: "image/8.jpg", alt: "First", caption: "First Image" },
+  { url: "image/9.jpg", alt: "Second", caption: "Second Image" },
+  { url: "image/10.jpg", alt: "Third", caption: "Third Image" },
+  { url: "image/11.jpg", alt: "Second", caption: "Second Image" },
+  { url: "image/12.jpg", alt: "Third", caption: "Third Image" },
+  { url: "image/13.jpg", alt: "First", caption: "First Image" },
+  { url: "image/14.jpg", alt: "Second", caption: "Second Image" },
+  { url: "image/15.jpg", alt: "Third", caption: "Third Image" },
+  { url: "image/16.jpg", alt: "First", caption: "First Image" },
+  { url: "image/17.jpg", alt: "Second", caption: "Second Image" },
+  { url: "image/18.jpg", alt: "Third", caption: "Third Image" },
+  { url: "image/19.jpg", alt: "First", caption: "First Image" },
+  { url: "image/20.jpg", alt: "Second", caption: "Second Image" },
+  { url: "image/21.jpg", alt: "Third", caption: "Third Image" },
+  { url: "image/22.jpg", alt: "First", caption: "First Image" },
+  { url: "image/23.jpg", alt: "Second", caption: "Second Image" },
+  { url: "image/24.jpg", alt: "Third", caption: "Third Image" },
+  { url: "image/25.jpg", alt: "First", caption: "First Image" },
+  { url: "image/26.jpg", alt: "Second", caption: "Second Image" },
+  { url: "image/27.jpg", alt: "Third", caption: "Third Image" },
+  { url: "image/28.jpg", alt: "Second", caption: "Second Image" },
+  { url: "image/29.jpg", alt: "Third", caption: "Third Image" },
+  { url: "image/30.jpg", alt: "First", caption: "First Image" },
+  { url: "image/31.jpg", alt: "Second", caption: "Second Image" },
+  { url: "image/32.jpg", alt: "Third", caption: "Third Image" },
+  { url: "image/33.jpg", alt: "First", caption: "First Image" },
+  { url: "image/34.jpg", alt: "Second", caption: "Second Image" },
+  { url: "image/35.jpg", alt: "Third", caption: "Third Image" },
+  { url: "image/36.jpg", alt: "First", caption: "First Image" },
+  { url: "image/37.jpg", alt: "Second", caption: "Second Image" },
+  { url: "image/38.jpg", alt: "Third", caption: "Third Image" },
+  { url: "image/39.jpg", alt: "First", caption: "First Image" },
+  { url: "image/40.jpg", alt: "Second", caption: "Second Image" },
+  { url: "image/41.jpg", alt: "Third", caption: "Third Image" },
+  { url: "image/42.jpg", alt: "First", caption: "First Image" },
+  { url: "image/43.jpg", alt: "Second", caption: "Second Image" },
+  { url: "image/44.jpg", alt: "Third", caption: "Third Image" },
+  { url: "image/45.jpg", alt: "Second", caption: "Second Image" },
+  { url: "image/46.jpg", alt: "Third", caption: "Third Image" },
+  { url: "image/47.jpg", alt: "First", caption: "First Image" },
+  { url: "image/48.jpg", alt: "Second", caption: "Second Image" },
+  { url: "image/49.jpg", alt: "Third", caption: "Third Image" },
+  { url: "image/50.jpg", alt: "First", caption: "First Image" },
+  { url: "image/51.jpg", alt: "Second", caption: "Second Image" },
+  { url: "image/52.jpg", alt: "Third", caption: "Third Image" },
+  { url: "image/53.jpg", alt: "Second", caption: "Second Image" },
+  { url: "image/54.jpg", alt: "Third", caption: "Third Image" },
+  { url: "image/55.jpg", alt: "First", caption: "First Image" },
+  { url: "image/56.jpg", alt: "Second", caption: "Second Image" },
+  { url: "image/57.jpg", alt: "Third", caption: "Third Image" },
+  { url: "image/58.jpg", alt: "First", caption: "First Image" },
+  { url: "image/59.jpg", alt: "Second", caption: "Second Image" },
+  { url: "image/60.jpg", alt: "Third", caption: "Third Image" },
+  { url: "image/61.jpg", alt: "First", caption: "First Image" },
+  { url: "image/62.jpg", alt: "First", caption: "First Image" },
+  { url: "image/63.jpg", alt: "First", caption: "First Image" },
+];
+
+    // DOM elements
+    const track = document.getElementById('sliderTrack');
+    const dotsContainer = document.getElementById('dotsContainer');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const slideCounterSpan = document.getElementById('slideCounter');
+
+    // Slider state
+    let currentIndex = 0;
+    let totalSlides = images.length;
+    let isAnimating = false;
+    let autoPlayInterval = null;
+    let isHovering = false;          // track mouse hover state for autoplay
+    
+    // Autoplay delay (ms)
+    const AUTO_DELAY = 3800;
+
+    // ------------------ Helper: update UI (dots + counter) ------------------
+    function updateDotsAndCounter() {
+      // update dots active class
+      const dots = document.querySelectorAll('.dot');
+      dots.forEach((dot, idx) => {
+        if (idx === currentIndex) {
+          dot.classList.add('active');
+        } else {
+          dot.classList.remove('active');
+        }
+      });
+      // update counter text (human-friendly 1-indexed)
+      slideCounterSpan.innerText = `${currentIndex + 1} / ${totalSlides}`;
+    }
+
+    // ------------------ apply transform to track (smooth slide) ------------------
+    function applySlideTransition(instant = false) {
+      if (!track) return;
+      const percentShift = - (currentIndex * 100);
+      if (instant) {
+        track.style.transition = 'none';
+        track.style.transform = `translateX(${percentShift}%)`;
+        // force reflow to ensure transition reset
+        void track.offsetHeight;
+        track.style.transition = 'transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+      } else {
+        track.style.transform = `translateX(${percentShift}%)`;
+      }
+    }
+
+    // go to specific slide index (with transition guard)
+    function goToSlide(newIndex, skipTransitionGuard = false) {
+      // validation & loop safety
+      if (totalSlides === 0) return;
+      // wrap around index
+      if (newIndex < 0) newIndex = totalSlides - 1;
+      if (newIndex >= totalSlides) newIndex = 0;
+      
+      // if same index and not forced, do nothing (avoid duplicate animation)
+      if (newIndex === currentIndex && !skipTransitionGuard) return;
+      // prevent rapid clicking during animation
+      if (isAnimating && !skipTransitionGuard) return;
+      
+      // set animating lock
+      if (!skipTransitionGuard) {
+        isAnimating = true;
+      }
+      
+      // update current index
+      currentIndex = newIndex;
+      
+      // apply smooth transform
+      applySlideTransition(false);
+      
+      // update dots and counter immediately (UI feedback)
+      updateDotsAndCounter();
+      
+      // remove transition lock after animation ends
+      if (!skipTransitionGuard) {
+        const onTransitionEnd = () => {
+          isAnimating = false;
+          track.removeEventListener('transitionend', onTransitionEnd);
+        };
+        track.addEventListener('transitionend', onTransitionEnd, { once: true });
+        // fallback: if transitionend never fires (rare), release lock after 500ms
+        setTimeout(() => {
+          if (isAnimating) {
+            isAnimating = false;
+          }
+        }, 500);
+      }
+    }
+    
+    // next slide
+    function nextSlide() {
+      if (isAnimating) return;
+      goToSlide(currentIndex + 1);
+      resetAutoPlayTimer();    // user interaction -> reset auto timer
+    }
+    
+    // previous slide
+    function prevSlide() {
+      if (isAnimating) return;
+      goToSlide(currentIndex - 1);
+      resetAutoPlayTimer();
+    }
+    
+    // ------------------ AUTO-PLAY LOGIC ------------------
+    function startAutoPlay() {
+      if (autoPlayInterval) clearInterval(autoPlayInterval);
+      if (totalSlides <= 1) return; // no need autoplay for single slide
+      autoPlayInterval = setInterval(() => {
+        // only proceed if not animating AND not hovering (pause on hover)
+        if (!isAnimating && !isHovering) {
+          // go to next slide (wraparound)
+          const nextIndex = (currentIndex + 1) % totalSlides;
+          goToSlide(nextIndex);
+        }
+      }, AUTO_DELAY);
+    }
+    
+    function stopAutoPlay() {
+      if (autoPlayInterval) {
+        clearInterval(autoPlayInterval);
+        autoPlayInterval = null;
+      }
+    }
+    
+    function resetAutoPlayTimer() {
+      // restart autoplay with fresh timer (keeps slideshow alive)
+      if (!isHovering) {
+        stopAutoPlay();
+        startAutoPlay();
+      } else {
+        // if hovering, do not restart now; will restart on mouseleave
+        // but we stop any existing so that when mouse leaves it starts fresh
+        if (autoPlayInterval) {
+          stopAutoPlay();
+        }
+      }
+    }
+    
+    // handle hover pause/resume
+    function setupHoverPause() {
+      const sliderElement = document.getElementById('photoSlider');
+      if (!sliderElement) return;
+      
+      sliderElement.addEventListener('mouseenter', () => {
+        isHovering = true;
+        // pause auto-play while hovering
+        if (autoPlayInterval) {
+          stopAutoPlay();
+        }
+      });
+      
+      sliderElement.addEventListener('mouseleave', () => {
+        isHovering = false;
+        // restart auto-play only if there is more than one image
+        if (totalSlides > 1) {
+          // ensure any existing interval is cleared and start fresh
+          stopAutoPlay();
+          startAutoPlay();
+        }
+      });
+    }
+    
+    // ------------------ BUILD DYNAMIC SLIDES & DOTS ------------------
+    function buildSlider() {
+      if (!track || !dotsContainer) return;
+      
+      // Clear existing content
+      track.innerHTML = '';
+      dotsContainer.innerHTML = '';
+      
+      // Create slides and dots
+      images.forEach((imgData, idx) => {
+        // slide div
+        const slideDiv = document.createElement('div');
+        slideDiv.className = 'slide';
+        const img = document.createElement('img');
+        img.src = imgData.url;
+        img.alt = imgData.alt;
+        img.loading = "eager";
+        // optional: set title attribute for tooltip
+        img.title = imgData.caption || imgData.alt;
+        slideDiv.appendChild(img);
+        track.appendChild(slideDiv);
+        
+        // dot button
+        const dot = document.createElement('div');
+        dot.classList.add('dot');
+        if (idx === currentIndex) dot.classList.add('active');
+        dot.setAttribute('data-index', idx);
+        dot.setAttribute('aria-label', `Go to slide ${idx+1}`);
+        dot.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (isAnimating) return;
+          const targetIdx = parseInt(dot.getAttribute('data-index'), 10);
+          if (!isNaN(targetIdx) && targetIdx !== currentIndex) {
+            goToSlide(targetIdx);
+            resetAutoPlayTimer();
+          }
+        });
+        dotsContainer.appendChild(dot);
+      });
+      
+      // set track width based on slides count (handled by flex)
+      // initial transform to start at currentIndex (0)
+      applySlideTransition(true);
+      updateDotsAndCounter();
+      
+      // Edge: if only one slide, hide arrows & autoplay disabled
+      if (totalSlides <= 1) {
+        prevBtn.style.display = 'none';
+        nextBtn.style.display = 'none';
+        stopAutoPlay();
+      } else {
+        prevBtn.style.display = 'flex';
+        nextBtn.style.display = 'flex';
+      }
+    }
+    
+    // ------------------ KEYBOARD NAVIGATION ------------------
+    function initKeyboardSupport() {
+      window.addEventListener('keydown', (e) => {
+        // ignore if typing in input or textarea
+        const targetTag = e.target.tagName;
+        if (targetTag === 'INPUT' || targetTag === 'TEXTAREA') return;
+        
+        if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          prevSlide();
+        } else if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          nextSlide();
+        }
+      });
+    }
+    
+    // ------------------ RESIZE HANDLER (ensures transform stays correct) ------------------
+    function handleResize() {
+      if (!isAnimating) {
+        // re-apply transform to avoid any misalignment due to layout shift
+        applySlideTransition(false);
+      }
+    }
+    
+    // ------------------ TOUCH SWIPE SUPPORT (mobile friendly) ------------------
+    function initTouchSwipe() {
+      const container = document.querySelector('.slider-container');
+      if (!container) return;
+      let touchStartX = 0;
+      let touchEndX = 0;
+      const minSwipeDistance = 50;
+      
+      container.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+      }, { passive: true });
+      
+      container.addEventListener('touchend', (e) => {
+        touchEndX = e.changedTouches[0].screenX;
+        const diff = touchEndX - touchStartX;
+        if (Math.abs(diff) > minSwipeDistance) {
+          if (diff > 0) {
+            // swipe right -> previous slide
+            prevSlide();
+          } else {
+            // swipe left -> next slide
+            nextSlide();
+          }
+          resetAutoPlayTimer();
+        }
+        touchStartX = 0;
+        touchEndX = 0;
+      });
+    }
+    
+    // ------------------ INITIALIZE EVERYTHING ------------------
+    function init() {
+      buildSlider();                // creates slides, dots and initial transform
+      startAutoPlay();             // start autoplay (only if >1 slide)
+      setupHoverPause();           // pause autoplay on hover
+      initKeyboardSupport();       // left/right arrows
+      window.addEventListener('resize', handleResize);
+      initTouchSwipe();            // mobile swipe gesture
+      
+      // attach button events
+      if (prevBtn && nextBtn) {
+        prevBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          prevSlide();
+        });
+        nextBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          nextSlide();
+        });
+      }
+      
+      // extra guard: if any image fails to load, keep UI consistent (no errors)
+      const allImages = document.querySelectorAll('.slide img');
+      allImages.forEach(img => {
+        img.addEventListener('error', () => {
+          // if image fails, replace with a subtle placeholder color (only fallback)
+          if (!img.src.includes('placekitten')) {
+            img.style.backgroundColor = '#2d3748';
+            img.style.objectFit = 'cover';
+            img.alt = 'Image failed to load';
+          }
+        });
+      });
+    }
+    
+    // start after DOM fully loaded
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  })();
+</script>
+</body>
+</html>
